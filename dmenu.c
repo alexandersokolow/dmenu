@@ -430,13 +430,13 @@ keypress(XKeyEvent *ev)
 	if (ev->state & ControlMask) {
 		switch(ksym) {
 		case XK_a: ksym = XK_Home;      break;
-		case XK_b: ksym = XK_Left;      break;
+		/* case XK_b: ksym = XK_Left;      break; */
 		case XK_c: ksym = XK_Escape;    break;
 		case XK_d: ksym = XK_Delete;    break;
-		case XK_e: ksym = XK_End;       break;
+		/* case XK_e: ksym = XK_End;       break; */
 		case XK_f: ksym = XK_Right;     break;
 		case XK_g: ksym = XK_Escape;    break;
-		case XK_h: ksym = XK_BackSpace; break;
+		/* case XK_h: ksym = XK_BackSpace; break; */
 		case XK_i: ksym = XK_Tab;       break;
 		case XK_j: ksym = XK_Down;      break;
 		case XK_k: ksym = XK_Up;        break;
@@ -450,51 +450,65 @@ keypress(XKeyEvent *ev)
 		/* 	text[cursor] = '\0'; */
 		/* 	match(); */
 		/* 	break; */
-		case XK_u: /* delete left */
+		case XK_x: /* delete left */
 			insert(NULL, 0 - cursor);
 			break;
-		case XK_w: /* delete word */
+		case XK_BackSpace: /* delete word */
+      ksym = NoSymbol;
 			while (cursor > 0 && strchr(worddelimiters, text[nextrune(-1)]))
 				insert(NULL, nextrune(-1) - cursor);
 			while (cursor > 0 && !strchr(worddelimiters, text[nextrune(-1)]))
 				insert(NULL, nextrune(-1) - cursor);
 			break;
-		case XK_y: /* paste selection */
-		case XK_Y:
-			XConvertSelection(dpy, (ev->state & ShiftMask) ? clip : XA_PRIMARY,
-			                  utf8, utf8, win, CurrentTime);
-			return;
+		/* case XK_y: /1* paste selection *1/ */
+		/* case XK_Y: */
+		/* 	XConvertSelection(dpy, (ev->state & ShiftMask) ? clip : XA_PRIMARY, */
+		/* 	                  utf8, utf8, win, CurrentTime); */
+		/* 	return; */
+		case XK_b:
+		case XK_h:
 		case XK_Left:
 		case XK_KP_Left:
 			movewordedge(-1);
 			goto draw;
+		case XK_e:
+		case XK_l:
 		case XK_Right:
 		case XK_KP_Right:
 			movewordedge(+1);
 			goto draw;
+    case XK_0: 
+      while (cursor > 0) 
+        cursor = nextrune(-1);
+      ksym = NoSymbol;
+      break;
+    case XK_4: 
+      cursor = strnlen(text, sizeof text - 1);
+      ksym = NoSymbol;
+      break;
 		case XK_Return:
 		case XK_KP_Enter:
 			break;
-		case XK_bracketleft:
-			cleanup();
-			exit(1);
+		/* case XK_bracketleft: */
+		/* 	cleanup(); */
+		/* 	exit(1); */
 		default:
 			return;
 		}
 	} else if (ev->state & Mod1Mask) {
 		switch(ksym) {
-		case XK_b:
-			movewordedge(-1);
-			goto draw;
-		case XK_f:
-			movewordedge(+1);
-			goto draw;
-		case XK_g: ksym = XK_Home;  break;
-		case XK_G: ksym = XK_End;   break;
-		case XK_h: ksym = XK_Up;    break;
-		case XK_j: ksym = XK_Next;  break;
-		case XK_k: ksym = XK_Prior; break;
-		case XK_l: ksym = XK_Down;  break;
+		/* case XK_b: */
+		/* 	movewordedge(-1); */
+		/* 	goto draw; */
+		/* case XK_f: */
+		/* 	movewordedge(+1); */
+		/* 	goto draw; */
+		/* case XK_g: ksym = XK_Home;  break; */
+		/* case XK_G: ksym = XK_End;   break; */
+		/* case XK_h: ksym = XK_Up;    break; */
+		/* case XK_j: ksym = XK_Next;  break; */
+		/* case XK_k: ksym = XK_Prior; break; */
+		/* case XK_l: ksym = XK_Down;  break; */
 		default:
 			return;
 		}
@@ -503,8 +517,11 @@ keypress(XKeyEvent *ev)
 	switch(ksym) {
 	default:
 insert:
-		if (!iscntrl((unsigned char)*buf))
-			insert(buf, len);
+		if (!iscntrl((unsigned char)*buf)) {
+      if (!(ev->state & ControlMask)) {
+        insert(buf, len);
+      }
+    }
 		break;
 	case XK_Delete:
 	case XK_KP_Delete:
@@ -602,14 +619,14 @@ insert:
 			calcoffsets();
 		}
 		break;
-	case XK_Tab:
-		if (!sel)
-			return;
-		cursor = strnlen(sel->text, sizeof text - 1);
-		memcpy(text, sel->text, cursor);
-		text[cursor] = '\0';
-		match();
-		break;
+	/* case XK_Tab: */
+	/* 	if (!sel) */
+	/* 		return; */
+	/* 	cursor = strnlen(sel->text, sizeof text - 1); */
+	/* 	memcpy(text, sel->text, cursor); */
+	/* 	text[cursor] = '\0'; */
+	/* 	match(); */
+	/* 	break; */
 	}
 
 draw:
