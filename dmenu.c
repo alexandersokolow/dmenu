@@ -465,6 +465,9 @@ keypress(XKeyEvent *ev)
 		/* 	XConvertSelection(dpy, (ev->state & ShiftMask) ? clip : XA_PRIMARY, */
 		/* 	                  utf8, utf8, win, CurrentTime); */
 		/* 	return; */
+		case XK_v: /* paste selection */
+			XConvertSelection(dpy, clip, utf8, utf8, win, CurrentTime);
+			return;
 		case XK_b:
 		case XK_h:
 		case XK_Left:
