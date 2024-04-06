@@ -45,6 +45,7 @@ static struct item *items = NULL;
 static struct item *matches, *matchend;
 static struct item *prev, *curr, *next, *sel;
 static int mon = -1, screen;
+static int vimode = 0;
 
 static Atom clip, utf8;
 static Display *dpy;
@@ -431,26 +432,24 @@ keypress(XKeyEvent *ev)
 		switch(ksym) {
 		case XK_a: ksym = XK_Home;      break;
 		case XK_b: ksym = XK_Left;      break;
-		case XK_c: ksym = XK_Escape;    break;
-		case XK_d: ksym = XK_Delete;    break;
+		/* case XK_c: ksym = XK_Escape;    break; */
+		/* case XK_d: ksym = XK_Delete;    break; */
 		case XK_e: ksym = XK_End;       break;
 		case XK_f: ksym = XK_Right;     break;
 		case XK_g: ksym = XK_Escape;    break;
-		case XK_h: ksym = XK_BackSpace; break;
+		/* case XK_h: ksym = XK_BackSpace; break; */
 		case XK_i: ksym = XK_Tab;       break;
-		case XK_j: /* fallthrough */
+		case XK_j: ksym = XK_Down;      break;
+		case XK_k: ksym = XK_Up;        break;
 		case XK_J: /* fallthrough */
 		case XK_m: /* fallthrough */
-		case XK_M: ksym = XK_Return; ev->state &= ~ControlMask; break;
+		/* case XK_M: ksym = XK_Return; ev->state &= ~ControlMask; break; */
 		case XK_n: ksym = XK_Down;      break;
 		case XK_p: ksym = XK_Up;        break;
 
-		case XK_k: /* delete right */
-			text[cursor] = '\0';
-			match();
-			break;
-		case XK_u: /* delete left */
-			insert(NULL, 0 - cursor);
+		case XK_c: /* delete right */
+      cleanup();
+      exit(1);
 			break;
 		case XK_w: /* delete word */
 			while (cursor > 0 && strchr(worddelimiters, text[nextrune(-1)]))
@@ -499,117 +498,143 @@ keypress(XKeyEvent *ev)
 		}
 	}
 
-	switch(ksym) {
-	default:
-insert:
-		if (!iscntrl((unsigned char)*buf))
-			insert(buf, len);
-		break;
-	case XK_Delete:
-	case XK_KP_Delete:
-		if (text[cursor] == '\0')
-			return;
-		cursor = nextrune(+1);
-		/* fallthrough */
-	case XK_BackSpace:
-		if (cursor == 0)
-			return;
-		insert(NULL, nextrune(-1) - cursor);
-		break;
-	case XK_End:
-	case XK_KP_End:
-		if (text[cursor] != '\0') {
-			cursor = strlen(text);
-			break;
-		}
-		if (next) {
-			/* jump to end of list and position items in reverse */
-			curr = matchend;
-			calcoffsets();
-			curr = prev;
-			calcoffsets();
-			while (next && (curr = curr->right))
-				calcoffsets();
-		}
-		sel = matchend;
-		break;
-	case XK_Escape:
-		cleanup();
-		exit(1);
-	case XK_Home:
-	case XK_KP_Home:
-		if (sel == matches) {
-			cursor = 0;
-			break;
-		}
-		sel = curr = matches;
-		calcoffsets();
-		break;
-	case XK_Left:
-	case XK_KP_Left:
-		if (cursor > 0 && (!sel || !sel->left || lines > 0)) {
-			cursor = nextrune(-1);
-			break;
-		}
-		if (lines > 0)
-			return;
-		/* fallthrough */
-	case XK_Up:
-	case XK_KP_Up:
-		if (sel && sel->left && (sel = sel->left)->right == curr) {
-			curr = prev;
-			calcoffsets();
-		}
-		break;
-	case XK_Next:
-	case XK_KP_Next:
-		if (!next)
-			return;
-		sel = curr = next;
-		calcoffsets();
-		break;
-	case XK_Prior:
-	case XK_KP_Prior:
-		if (!prev)
-			return;
-		sel = curr = prev;
-		calcoffsets();
-		break;
-	case XK_Return:
-	case XK_KP_Enter:
-		puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
-		if (!(ev->state & ControlMask)) {
-			cleanup();
-			exit(0);
-		}
-		if (sel)
-			sel->out = 1;
-		break;
-	case XK_Right:
-	case XK_KP_Right:
-		if (text[cursor] != '\0') {
-			cursor = nextrune(+1);
-			break;
-		}
-		if (lines > 0)
-			return;
-		/* fallthrough */
-	case XK_Down:
-	case XK_KP_Down:
-		if (sel && sel->right && (sel = sel->right) == next) {
-			curr = next;
-			calcoffsets();
-		}
-		break;
-	case XK_Tab:
-		if (!sel)
-			return;
-		cursor = strnlen(sel->text, sizeof text - 1);
-		memcpy(text, sel->text, cursor);
-		text[cursor] = '\0';
-		match();
-		break;
-	}
+  if (vimode == 1) {
+    switch(ksym) {
+      case XK_h: 
+        if (cursor > 0 && (!sel || !sel->left || lines > 0)) {
+          cursor = nextrune(-1);
+          break;
+        }
+        if (lines > 0)
+          return;
+      case XK_l: 
+        if (text[cursor] != '\0') {
+          cursor = nextrune(+1);
+          break;
+        }
+        if (lines > 0)
+          return;
+    }
+  } else {
+    switch(ksym) {
+      default:
+      insert:
+        if (!iscntrl((unsigned char)*buf))
+          insert(buf, len);
+        break;
+      case XK_Delete:
+      case XK_KP_Delete:
+        if (text[cursor] == '\0')
+          return;
+        cursor = nextrune(+1);
+        /* fallthrough */
+      case XK_BackSpace:
+        if (cursor == 0)
+          return;
+        insert(NULL, nextrune(-1) - cursor);
+        break;
+      case XK_End:
+      case XK_KP_End:
+        if (text[cursor] != '\0') {
+          cursor = strlen(text);
+          break;
+        }
+        if (next) {
+          /* jump to end of list and position items in reverse */
+          curr = matchend;
+          calcoffsets();
+          curr = prev;
+          calcoffsets();
+          while (next && (curr = curr->right))
+            calcoffsets();
+        }
+        sel = matchend;
+        break;
+      case XK_Escape:
+        vimode = 1;
+        break;
+        /* cleanup(); */
+        /* exit(1); */
+      case XK_i:
+        vimode = 0;
+        break;
+        /* cleanup(); */
+        /* exit(1); */
+      case XK_Home:
+      case XK_KP_Home:
+        if (sel == matches) {
+          cursor = 0;
+          break;
+        }
+        sel = curr = matches;
+        calcoffsets();
+        break;
+      case XK_Left:
+      case XK_KP_Left:
+        if (cursor > 0 && (!sel || !sel->left || lines > 0)) {
+          cursor = nextrune(-1);
+          break;
+        }
+        if (lines > 0)
+          return;
+        /* fallthrough */
+      case XK_Up:
+      case XK_KP_Up:
+        if (sel && sel->left && (sel = sel->left)->right == curr) {
+          curr = prev;
+          calcoffsets();
+        }
+        break;
+      case XK_Next:
+      case XK_KP_Next:
+        if (!next)
+          return;
+        sel = curr = next;
+        calcoffsets();
+        break;
+      case XK_Prior:
+      case XK_KP_Prior:
+        if (!prev)
+          return;
+        sel = curr = prev;
+        calcoffsets();
+        break;
+      case XK_Return:
+      case XK_KP_Enter:
+        puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
+        if (!(ev->state & ControlMask)) {
+          cleanup();
+          exit(0);
+        }
+        if (sel)
+          sel->out = 1;
+        break;
+      case XK_Right:
+      case XK_KP_Right:
+        if (text[cursor] != '\0') {
+          cursor = nextrune(+1);
+          break;
+        }
+        if (lines > 0)
+          return;
+        /* fallthrough */
+      case XK_Down:
+      case XK_KP_Down:
+        if (sel && sel->right && (sel = sel->right) == next) {
+          curr = next;
+          calcoffsets();
+        }
+        break;
+      case XK_Tab:
+        if (!sel)
+          return;
+        cursor = strnlen(sel->text, sizeof text - 1);
+        memcpy(text, sel->text, cursor);
+        text[cursor] = '\0';
+        match();
+        break;
+    }
+  }
 
 draw:
 	drawmenu();
