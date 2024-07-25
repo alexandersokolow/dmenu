@@ -29,3 +29,4 @@ static const char worddelimiters[] = " ";
 
 static int centered = 1;                    /* -c option; centers dmenu on screen */
 static int min_width = 1200;                    /* minimum width when centered */
+static int max_width = 1600;                    /* maximum width when centered */
